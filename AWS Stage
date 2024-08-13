@@ -1,0 +1,41 @@
+create or replace database MY_DB;
+create or replace schema external_stage; 
+
+-- creating external stage
+create or replace stage MY_DB.external_stage.aws_stage
+URL='s3://ishanksnowflake/'
+  CREDENTIALS=(AWS_KEY_ID='AUM...' AWS_SECRET_KEY='Ef...');
+
+  -- list files
+list @aws_stage
+
+DESCRIBE STAGE @aws_stage;
+
+-- create orders table
+CREATE OR REPLACE TABLE public.ORDERS (
+    ORDER_ID VARCHAR(30),
+    USER_ID INT,
+    EVAL_SET VARCHAR(10),
+    ORDER_NUMBER INT,
+    ORDER_DOW INT,
+    ORDER_HOUR_OF_DAY INT,
+    DAYS_SINCE_PRIOR_ORDER INT
+);
+-- copy data from stage to table
+COPY INTO MY_DB.public.orders
+FROM @aws_stage/orders.csv
+FILE_FORMAT = (TYPE = 'CSV', FIELD_DELIMITER = ',', SKIP_HEADER = 1);
+
+select * from orders;
+-- Transforming while loading
+
+CREATE OR REPLACE TABLE public.ORDERS_Trans (
+    ORDER_ID VARCHAR(30),
+    USER_ID INT
+);
+
+COPY INTO MY_DB.public.orders_trans
+from (select s.$1, s.$2 FROM @aws_stage/orders.csv s)
+FILE_FORMAT = (TYPE = 'CSV', FIELD_DELIMITER = ',', SKIP_HEADER = 1);
+
+select * from orders_trans;
