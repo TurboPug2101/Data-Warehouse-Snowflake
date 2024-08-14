@@ -1,0 +1,25 @@
+create or replace schema file_format_schema; 
+
+CREATE FILE FORMAT MY_DB.file_format_schema.myformat;
+
+desc file format MY_DB.file_format_schema.myformat;
+
+alter file format MY_DB.file_format_schema.myformat
+set SKIP_HEADER=1; 
+
+CREATE or replace FILE FORMAT MY_DB.file_format_schema.myformat
+set type=JSON, 
+TIME_FORMAT=auto;
+
+truncate MY_DB.public.orders; 
+
+select * from MY_DB.public.orders;
+
+show file formats;
+
+cOPY INTO MY_DB.public.orders
+FROM @aws_stage/orders.csv
+FILE_FORMAT = (format_name = MY_DB.file_format_schema.myformat);
+
+show stages;
+
