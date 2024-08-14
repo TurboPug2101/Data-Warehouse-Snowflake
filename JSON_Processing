@@ -1,0 +1,78 @@
+create or replace stage my_db.external_stage.json_stage
+URL='s3://bucketsnowflake-jsondemo/';
+
+list @my_db.external_stage.json_stage;
+
+CREATE or replace FILE FORMAT MY_DB.file_format_schema.json_format
+ type=JSON;
+
+ create database json_db;
+
+ create or replace table json_db.public.json_raw_table(
+    raw_file variant
+ );
+ -- raw file= col name, variant is data type
+
+ -- load json data
+   -- ==========================================
+
+ copy into json_db.public.JSON_RAW_TABLE
+ from @my_db.external_stage.json_stage
+ file_format = my_db.file_format_schema.json_format
+ files = ('HR_data.json');
+
+ select * from json_db.public.JSON_RAW_TABLE;
+
+ select raw_file : city , 
+ raw_file : first_name::string Fname 
+ from json_db.public.JSON_RAW_TABLE;
+ -- :: string to remove ""
+ -- syntax => column name:key::string alias from.. 
+ -- can use $1 instead of raw_file(only column)
+
+ -- handling nested data
+   -- ==========================================
+
+ select raw_file:job.salary Salary,
+  raw_file:job.title Title
+ from json_db.public.JSON_RAW_TABLE;
+
+
+ -- Where Data is stored as an array containing multiple values
+   -- ==========================================
+
+ select raw_file:prev_company[0] 
+  from json_db.public.JSON_RAW_TABLE;
+
+
+  -- Handling JSON Inside JSON
+  -- ==========================================
+  select raw_file:spoken_languages 
+  from json_db.public.JSON_RAW_TABLE;
+
+  -- [
+--   {
+--     "language": "Kazakh",
+--     "level": "Advanced"
+--   },
+--   {
+--     "language": "Lao",
+--     "level": "Basic"
+--   }
+-- ]
+
+create or replace table langauge_table as
+select raw_file:first_name as Fname,
+f.value:language::STRING Language_col,
+f.value:level::STRING Level_col,
+f.value
+from json_db.public.JSON_RAW_TABLE ,table(flatten(raw_file:spoken_languages)) f;
+
+-- output
+-- FNAME          LANGUAGE_COL        LEVEL_COL         VALUE
+-- "Portia"         Kazakh              Advanced        ( "language": "Kazakh", "level": "Advanced"}
+-- 
+
+
+
+select* from langauge_table;
