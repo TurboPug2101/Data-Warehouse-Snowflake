@@ -7,10 +7,10 @@ CREATE OR REPLACE STORAGE INTEGRATION s3_init
     STORAGE_ALLOWED_LOCATIONS = ('s3://ishanksnowflake')
     STORAGE_AWS_ROLE_ARN = 'arn:aws:iam::637423564920:role/snowflake-s3-connection'
     COMMENT = 'creating s3 connection';
-
     -- An Amazon Resource Name (ARN) is a string that uniquely identifies an AWS resourc
 
 DESC INTEGRATION s3_init;
+
 
 -- create table 
 CREATE OR REPLACE TABLE MY_DB.public.ORDERS_S3_integ(
@@ -24,28 +24,30 @@ CREATE OR REPLACE TABLE MY_DB.public.ORDERS_S3_integ(
 );
 
 -- creating file format
-// Create file format object
-
+// Create file format objec
 CREATE OR REPLACE file format MY_DB.file_format_schema.csv_fileformat
-type = csv
-field_delimiter=','
-skip_header = 1
-null_if = ('NULL' ,'null')
-empty_field_as_null = TRUE;
+    type = csv
+    field_delimiter = ','
+    skip_header = 1
+    null_if = ('NULL','null')
+    empty_field_as_null = TRUE;
 
--- Creating New Stage
-create or replace stage MY_DB.external_stage.csv_stage
-URL = 's3://ishanksnowflake'
+
+ // Create stage object with integration object & file format object
+CREATE OR REPLACE stage MY_DB.external_stage.csv_folder_integ
+    URL = 's3://ishanksnowflake/'
     STORAGE_INTEGRATION = s3_init
-    FILE_FORMAT = MY_DB.file_format_schema.csv_fileformat;
+    FILE_FORMAT = MY_DB.file_format_schema.csv_fileformat
 
 
-LIST @MY_DB.external_stage.csv_stage;
+
+LIST @MY_DB.external_stage.csv_folder_integ;
 
 
 
 -- copy in table from stage
 copy into MY_DB.public.ORDERS_S3_integ 
-from  @MY_DB.external_stage.csv_stage;
+from  @MY_DB.external_stage.csv_folder_integ;
+
 
 select * from MY_DB.public.ORDERS_S3_integ ;
