@@ -1,0 +1,57 @@
+-- Creating table
+CREATE OR REPLACE TABLE MY_DB.PUBLIC.orders_snowpipe (
+    order_id INT,
+    user_id INT,
+    eval_set STRING,
+    order_num INT,
+    order_dow INT,
+    order_hour_of_day INT,
+    days_since_prior_order INT
+);
+
+
+
+
+// Create file format object
+
+CREATE OR REPLACE FILE FORMAT MY_DB.file_format_schema.orders_file_format
+    TYPE = CSV
+    FIELD_DELIMITER = ','
+    SKIP_HEADER = 1
+    NULL_IF = ('NULL','null')
+    EMPTY_FIELD_AS_NULL = TRUE;
+
+
+-- Creating New Stage
+CREATE OR REPLACE stage MY_DB.external_stage.csv_folder_snowpipe
+    URL = 's3://ishanksnowflake/'
+    STORAGE_INTEGRATION = s3_init
+    FILE_FORMAT = MY_DB.file_format_schema.orders_file_format
+
+
+
+SHOW STORAGE_INTEGRATIONS;
+
+List @MY_DB.external_stage.csv_folder_snowpipe;
+
+-- Create Schema
+CREATE OR REPLACE SCHEMA my_db.pipes_obj;
+
+
+-- Basically as soon as new file is uploaded on aws folder, it will be added to snowflake table
+CREATE OR REPLACE PIPE my_db.pipes_obj.orders_pipe
+AUTO_INGEST = TRUE
+AS
+COPY INTO MY_DB.PUBLIC.orders_snowpipe
+FROM @MY_DB.external_stage.csv_folder_snowpipe
+
+desc pipe my_db.pipes_obj.orders_pipe
+
+-- AWS properties of bucket
+-- SQS queue
+
+-- Enter SQS queue ARN
+
+select count(*) from MY_DB.PUBLIC.orders_snowpipe 
+
+show pipes
